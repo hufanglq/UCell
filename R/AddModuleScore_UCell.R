@@ -145,7 +145,8 @@ AddModuleScore_UCell <- function(obj, features, maxRank=1500, storeRanks=FALSE,n
         w_neg=w_neg, ties.method=ties.method,
         force.gc=force.gc, storeRanks=storeRanks, name=name)
     })
-    meta.list <- unlist(meta.list, recursive = FALSE)
+    if(ncores>1)
+        meta.list <- unlist(meta.list, recursive = FALSE)
 
     #store ranks matrix?
     if (storeRanks==TRUE){
