@@ -131,7 +131,7 @@ AddModuleScore_UCell <- function(obj, features, maxRank=1500, storeRanks=FALSE,n
   if ("UCellRanks" %in% Seurat::Assays(obj)) {
     meta.list <- rankings2Uscore_fast(
       Seurat::GetAssayData(obj, layer="counts", assay="UCellRanks"),
-      features=features, w_neg=w_neg, force.gc=force.gc, name=name)
+      features=features, w_neg=w_neg, name=name)
   } else {
     layers <- SeuratObject::Layers(obj, assay=assay, search = slot)
     if (is.null(layers)) {
