@@ -65,52 +65,99 @@
 #' head(obj$NKcell)
 #'
 #' @export
-AddModuleScore_UCell <- function(obj, features, maxRank=1500,
-        chunk.size=100, BPPARAM=NULL, ncores=1, storeRanks=FALSE,
-        w_neg=1, assay=NULL, slot="counts", ties.method="average",
-        force.gc=FALSE, name="_UCell") {
-    if (!requireNamespace("Seurat", quietly = TRUE)) {
-        stop("Function 'AddModuleScore_UCell' requires the Seurat package.
-            Please install it.", call. = FALSE)
-    }  
-    features <- check_signature_names(features)
-    if (is.null(assay)) {
-        assay <- Seurat::DefaultAssay(obj)
-    }
-    # If rank matrix was pre-computed, evaluate the new signatures
-    # from these ranks.
-    if ("UCellRanks" %in% Seurat::Assays(obj)) {
-        meta.list <- rankings2Uscore(
-            Seurat::GetAssayData(obj, layer="counts", assay="UCellRanks"),
-            features=features, chunk.size=chunk.size, w_neg=w_neg,
-            ncores=ncores, BPPARAM=BPPARAM, force.gc=force.gc, name=name)
-    } else {
-        layers <- SeuratObject::Layers(obj, assay=assay, search = slot)
-        if (is.null(layers)) {
-          stop(sprintf("Cannot find layer %s in assay %s", slot, assay))
-        }
+# AddModuleScore_UCell <- function(obj, features, maxRank=1500,
+#         chunk.size=100, BPPARAM=NULL, ncores=1, storeRanks=FALSE,
+#         w_neg=1, assay=NULL, slot="counts", ties.method="average",
+#         force.gc=FALSE, name="_UCell") {
+#     if (!requireNamespace("Seurat", quietly = TRUE)) {
+#         stop("Function 'AddModuleScore_UCell' requires the Seurat package.
+#             Please install it.", call. = FALSE)
+#     }  
+#     features <- check_signature_names(features)
+#     if (is.null(assay)) {
+#         assay <- Seurat::DefaultAssay(obj)
+#     }
+#     # If rank matrix was pre-computed, evaluate the new signatures
+#     # from these ranks.
+#     if ("UCellRanks" %in% Seurat::Assays(obj)) {
+#         meta.list <- rankings2Uscore(
+#             Seurat::GetAssayData(obj, layer="counts", assay="UCellRanks"),
+#             features=features, chunk.size=chunk.size, w_neg=w_neg,
+#             ncores=ncores, BPPARAM=BPPARAM, force.gc=force.gc, name=name)
+#     } else {
+#         layers <- SeuratObject::Layers(obj, assay=assay, search = slot)
+#         if (is.null(layers)) {
+#           stop(sprintf("Cannot find layer %s in assay %s", slot, assay))
+#         }
 
-        meta.list <- lapply(layers, function(x) {
-          calculate_Uscore(
-            Seurat::GetAssayData(obj, layer=x, assay=assay),
-            features=features, maxRank=maxRank,
-            chunk.size=chunk.size, w_neg=w_neg,
-            ncores=ncores, BPPARAM=BPPARAM, ties.method=ties.method,
-            force.gc=force.gc, storeRanks=storeRanks, name=name)
-        })
+#         meta.list <- lapply(layers, function(x) {
+#           calculate_Uscore(
+#             Seurat::GetAssayData(obj, layer=x, assay=assay),
+#             features=features, maxRank=maxRank,
+#             chunk.size=chunk.size, w_neg=w_neg,
+#             ncores=ncores, BPPARAM=BPPARAM, ties.method=ties.method,
+#             force.gc=force.gc, storeRanks=storeRanks, name=name)
+#         })
         
-        meta.list <- unlist(meta.list, recursive = FALSE)
-        #store ranks matrix?
-        if (storeRanks==TRUE){
-            cells_rankings.merge <- lapply(meta.list,
-                function(x) rbind(x[["cells_rankings"]]))
-            cells_rankings.merge <- Reduce(cbind, cells_rankings.merge)
-            obj[["UCellRanks"]] <- Seurat::CreateAssayObject(
-                cells_rankings.merge)
-        }
+#         meta.list <- unlist(meta.list, recursive = FALSE)
+#         #store ranks matrix?
+#         if (storeRanks==TRUE){
+#             cells_rankings.merge <- lapply(meta.list,
+#                 function(x) rbind(x[["cells_rankings"]]))
+#             cells_rankings.merge <- Reduce(cbind, cells_rankings.merge)
+#             obj[["UCellRanks"]] <- Seurat::CreateAssayObject(
+#                 cells_rankings.merge)
+#         }
+#     }
+#     meta.merge <- lapply(meta.list,function(x) rbind(x[["cells_U"]]))
+#     meta.merge <- Reduce(rbind, meta.merge)
+#     obj <- Seurat::AddMetaData(obj, as.data.frame(meta.merge))
+#     return(obj)
+# }
+
+AddModuleScore_UCell <- function(obj, features, maxRank=1500, storeRanks=FALSE,ncores=1,
+                                 w_neg=1, assay=NULL, slot="counts", ties.method="average",
+                                 force.gc=FALSE, name="_UCell") {
+  if (!requireNamespace("Seurat", quietly = TRUE)) {
+    stop("Function 'AddModuleScore_UCell' requires the Seurat package.
+            Please install it.", call. = FALSE)
+  }  
+  features <- UCell:::check_signature_names(features)
+  if (is.null(assay)) {
+    assay <- Seurat::DefaultAssay(obj)
+  }
+  # If rank matrix was pre-computed, evaluate the new signatures
+  # from these ranks.
+  if ("UCellRanks" %in% Seurat::Assays(obj)) {
+    meta.list <- rankings2Uscore_fast(
+      Seurat::GetAssayData(obj, layer="counts", assay="UCellRanks"),
+      features=features, w_neg=w_neg, force.gc=force.gc, name=name)
+  } else {
+    layers <- SeuratObject::Layers(obj, assay=assay, search = slot)
+    if (is.null(layers)) {
+      stop(sprintf("Cannot find layer %s in assay %s", slot, assay))
     }
-    meta.merge <- lapply(meta.list,function(x) rbind(x[["cells_U"]]))
-    meta.merge <- Reduce(rbind, meta.merge)
-    obj <- Seurat::AddMetaData(obj, as.data.frame(meta.merge))
-    return(obj)
+    
+    meta.list <- lapply(layers, function(x) {
+      calculate_Uscore_fast(
+        Seurat::GetAssayData(obj, layer=x, assay=assay),
+        features=features, maxRank=maxRank,ncores=ncores,
+        w_neg=w_neg, ties.method=ties.method,
+        force.gc=force.gc, storeRanks=storeRanks, name=name)
+    })
+    
+    # if(length(meta.list)>1)
+    #   meta.list <- unlist(meta.list, recursive = FALSE)
+    #store ranks matrix?
+    if (storeRanks==TRUE){
+      cells_rankings.merge <- lapply(meta.list, function(x) x[["cells_rankings"]])
+      cells_rankings.merge <- Reduce(cbind, cells_rankings.merge)
+      obj[["UCellRanks"]] <- Seurat::CreateAssayObject(
+        cells_rankings.merge)
+    }
+  }
+  meta.merge <- lapply(meta.list,function(x) x[["cells_U"]])
+  meta.merge <- Reduce(rbind, meta.merge)
+  obj <- Seurat::AddMetaData(obj, as.data.frame(meta.merge))
+  return(obj)
 }
