@@ -53,7 +53,7 @@ calculate_Uscore_fast <- function(
         colnames(cells_U) <- paste0(colnames(cells_U),name)
   
         if (storeRanks==TRUE){
-          gene.names <- as.character(as.matrix(cells_rankings[,1]))
+          gene.names <- as.character(rownames(cells_rankings))
           #make sparse (rank=0 means rank>=maxRank)
           cells_rankings[cells_rankings>=maxRank] <- 0
           ranks.sparse <- Matrix::Matrix(as.matrix(
