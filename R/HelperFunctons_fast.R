@@ -33,26 +33,19 @@ calculate_Uscore_fast <- function(
   
   
   if(ncores > 1){
-    #Split into manageable chunks
+    #Split into manageable chunks index
     chunk_idy <- chunk_index(seq_len(ncol(matrix)), n=ncores)
   
     if (Sys.info()['sysname'] == "Windows" | identical(.Platform$GUI, "RStudio")) {
-      # BPPARAM <- BiocParallel::SnowParam(workers=ncores)
-      library(furrr)
-      plan(multisession, workers = ncores)
+      BPPARAM <- BiocParallel::SnowParam(workers=ncores)
     } else {
       BPPARAM <- BiocParallel::MulticoreParam(workers=ncores)
     }
     
-    
-    meta.list <- furrr::future_map(
-    # meta.list <- BiocParallel::bplapply(
-    # meta.list <- lapply(
-      chunk_idy,
-      # X = split.data, 
-      # BPPARAM =  BPPARAM,
-      # FUN = function(x) {
-      .f = function(x) {
+    meta.list <- BiocParallel::bplapply(
+      X = chunk_idy, 
+      BPPARAM = BPPARAM,
+      FUN = function(x) {
         cells_rankings <- data_to_ranks(matrix[,x], ties.method=ties.method)
         cells_U <- u_stat_signature_list_fast(features, cells_rankings, 
                                               maxRank=maxRank, sparse=FALSE,
