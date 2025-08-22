@@ -36,7 +36,7 @@ calculate_Uscore_fast <- function(
     #Split into manageable chunks index
     chunk_idy <- chunk_index(seq_len(ncol(matrix)), n=ncores)
   
-    if (Sys.info()['sysname'] == "Windows" | identical(.Platform$GUI, "RStudio")) {
+    if (Sys.info()['sysname'] == "Windows") {
       BPPARAM <- BiocParallel::SnowParam(workers=ncores)
     } else {
       BPPARAM <- BiocParallel::MulticoreParam(workers=ncores)
