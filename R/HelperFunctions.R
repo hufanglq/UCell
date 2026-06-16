@@ -142,7 +142,11 @@ calculate_Uscore <- function(
     
     #Either take a BPPARAM object, or make one on the spot using 'ncores'
     if (is.null(BPPARAM)) {
-        BPPARAM <- BiocParallel::MulticoreParam(workers=ncores)
+        if (parallelly::supportsMulticore()) {
+          BPPARAM <- BiocParallel::MulticoreParam(workers=ncores)
+        } else {
+          BPPARAM <- BiocParallel::SnowParam(workers=ncores)
+        }
     }
     meta.list <- BiocParallel::bplapply(
         X = split.data, 
@@ -210,7 +214,11 @@ rankings2Uscore <- function(ranks_matrix, features, chunk.size=100, w_neg=1,
     
     #Either take a BPPARAM object, or make one on the spot using 'ncores'
     if (is.null(BPPARAM)) {
-        BPPARAM <- BiocParallel::MulticoreParam(workers=ncores)
+        if (parallelly::supportsMulticore()) {
+          BPPARAM <- BiocParallel::MulticoreParam(workers=ncores)
+        } else {
+          BPPARAM <- BiocParallel::SnowParam(workers=ncores)
+        }
     }
     meta.list <- BiocParallel::bplapply(
         X = split.data, 
