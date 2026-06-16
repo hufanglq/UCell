@@ -36,10 +36,10 @@ calculate_Uscore_fast <- function(
     #Split into manageable chunks index
     chunk_idy <- chunk_index(seq_len(ncol(matrix)), n=ncores)
   
-    if (Sys.info()['sysname'] == "Windows") {
-      BPPARAM <- BiocParallel::SnowParam(workers=ncores)
-    } else {
+    if (parallelly::supportsMulticore()) {
       BPPARAM <- BiocParallel::MulticoreParam(workers=ncores)
+    } else {
+      BPPARAM <- BiocParallel::SnowParam(workers=ncores)
     }
     
     meta.list <- BiocParallel::bplapply(
